@@ -7,13 +7,16 @@ import ProfileScreen from './screens/Profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import SplashScreen from './screens/SplashScreen';
+import * as Font from 'expo-font';
+import AppLoading from 'expo-app-loading';
 
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [userToken, setUserToken] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
+
 
   const storeUserAuthentication = async(userToken) => {
     try {
@@ -35,21 +38,31 @@ export default function App() {
   }
 
   useEffect(() => {
-    const bootstrapAsync = async () => {
+    async function initializeApp() {
+      let token;
       try {
-        const token = await retrieveUserToken();
-        setUserToken(token);
+        // Load fonts and retrieve user token in parallel
+        const fontPromise = Font.loadAsync({
+          'MarkaziText-Regular': require('./assets/MarkaziText-Regular.ttf'),
+        });
+        const tokenPromise = AsyncStorage.getItem('userToken');
+        await Promise.all([fontPromise, tokenPromise]);
+
+        // Set the user token if it exists
+        token = await tokenPromise;
       } catch (e) {
-          console.error('Error during token retrieval:', e);
+        console.error('Error loading app resources:', e);
       }
-      setIsLoading(false);
-    };
-    bootstrapAsync();
+      setUserToken(token);
+      setIsReady(true);
+    }
+
+    initializeApp();
   }, []);
 
-  if (isLoading) {
+  if (!isReady) {
     
-    return <SplashScreen />
+    return <AppLoading />
   }
 
   const isSignedIn = userToken !== null;
@@ -58,11 +71,9 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator>
         {isSignedIn ? (
-          <>
-          <Stack.Screen name="Profile" component={ProfileScreen}/>
-          </>
+          <Stack.Screen name="Profile" component={ProfileScreen} />
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen}/>
+          <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
         )}
       </Stack.Navigator>
     </NavigationContainer>

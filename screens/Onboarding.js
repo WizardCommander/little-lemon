@@ -2,32 +2,15 @@ import { StyleSheet, Text, View, Image, TextInput, Pressable } from "react-nativ
 import { useState, useEffect } from "react";
 import Logo from '../assets/Logo.png'
 import validator from 'validator'
-import * as Font from 'expo-font';
-import {NavigationContatiner} from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
+
 
 export default function LoginScreen() {
-
-    const customFonts = {
-        'Markzai-Regular': require('./assets/MarkaziText-Regular.ttf')
-    }
+    const navigation = useNavigation();
 
     const [firstNameInput, setNameInput] = useState('')
     const [errorMessage, setErrorMessage] = useState('')
     const [emailInput, setEmail] = useState('')
-    const [fontsLoaded, setFontsLoaded] = useState(false);
-
-    async function loadFonts() {
-      await Font.loadAsync(customFonts);
-      setFontsLoaded(true);
-    }
-  
-    useEffect(() => {
-      loadFonts();
-    }, []);
-  
-    if (!fontsLoaded) {
-      return <View><Text>Loading...</Text></View>;
-    }
 
     const validateName = (text) => {
         const isAllLetters = text.split('').every((char) => {
@@ -67,30 +50,29 @@ export default function LoginScreen() {
     const isFormIncomplete = firstNameInput.trim() === '' || !validator.isEmail(emailInput);
 
     return (
-        <NavigationContatiner>
-            <View style={styles.container}>
-                <Image source={Logo} style={styles.image}></Image>
+         <View style={styles.container}>
+            <Image source={Logo} style={styles.image}></Image>
 
-                <Text style={styles.textRegular}>Sign up to continue!</Text>
-                {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
-                <TextInput
-                placeholder={"First Name"}
-                onChangeText={validateName}
-                style={styles.input}/>
+             <Text style={styles.textRegular}>Sign up to continue!</Text>
+            {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
+            <TextInput
+             placeholder={"First Name"}
+            onChangeText={validateName}
+            style={styles.input}/>
+                
+            <TextInput
+            placeholder={"Email Address"}
+            onChangeText={validateEmail}
+            style={styles.input}/>
 
-                <TextInput
-                placeholder={"Email Address"}
-                onChangeText={validateEmail}
-                style={styles.input}/>
+            <Pressable
+            style={styles.button}
+            disabled={isFormIncomplete}
+            onPress={() => navigation.navigate('Profile')}>
+                <Text style={styles.buttonText}>Submit</Text>
+            </Pressable>
 
-                <Pressable
-                style={styles.button}
-                disabled={isFormIncomplete}>
-                    <Text style={styles.buttonText}>Submit</Text>
-                </Pressable>
-
-            </View>
-        </NavigationContatiner>
+        </View>
     )
 }
 
@@ -113,8 +95,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
       },
       textRegular : {
-        fontSize: 24,
-        fontFamily: 'MarkaziText-Regular',
+        fontSize: 20,
+        fontFamily: 'MarkaziText-Regular, System',
       },
       button: {
         marginTop: 20,
