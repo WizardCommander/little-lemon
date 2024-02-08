@@ -5,13 +5,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from './screens/Profile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
-import SplashScreen from './screens/SplashScreen';
+import React, { useEffect, useState } from 'react';
 import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
 
 
 const Stack = createNativeStackNavigator();
+
 
 export default function App() {
   const [userToken, setUserToken] = useState(null);
@@ -46,10 +45,9 @@ export default function App() {
           'MarkaziText-Regular': require('./assets/MarkaziText-Regular.ttf'),
         });
         const tokenPromise = AsyncStorage.getItem('userToken');
-        await Promise.all([fontPromise, tokenPromise]);
+        const [, tokenResult] = await Promise.all([fontPromise, tokenPromise]);
 
-        // Set the user token if it exists
-        token = await tokenPromise;
+        token = tokenResult;
       } catch (e) {
         console.error('Error loading app resources:', e);
       }
@@ -61,20 +59,16 @@ export default function App() {
   }, []);
 
   if (!isReady) {
-    
-    return <AppLoading />
+    return null;
   }
 
-  const isSignedIn = userToken !== null;
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {isSignedIn ? (
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
-        )}
+      <Stack.Navigator initialRouteName={userToken ? "Profile" : "Login"}>
+        <Stack.Screen name='Login' component={LoginScreen} options={{headerShown: false}} />
+        <Stack.Screen name='Profile' component={ProfileScreen} options={{headerShown: false}}/>
+       
       </Stack.Navigator>
     </NavigationContainer>
   );

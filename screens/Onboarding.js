@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Image, TextInput, Pressable } from "react-native";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Logo from '../assets/Logo.png'
 import validator from 'validator'
 import { useNavigation } from '@react-navigation/native'
@@ -68,7 +68,7 @@ export default function LoginScreen() {
             <Pressable
             style={styles.button}
             disabled={isFormIncomplete}
-            onPress={() => navigation.navigate('Profile')}>
+            onPress={() => navigation.navigate('Profile', {firstNameInput, emailInput})}>
                 <Text style={styles.buttonText}>Submit</Text>
             </Pressable>
 
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
       },
       textRegular : {
         fontSize: 20,
-        fontFamily: 'MarkaziText-Regular, System',
+        fontFamily: 'MarkaziText-Regular',
       },
       button: {
         marginTop: 20,
