@@ -43,7 +43,7 @@ export default function App() {
         // Load fonts and retrieve user token in parallel
         const fontPromise = Font.loadAsync({
           'MarkaziText-Regular': require('./assets/MarkaziText-Regular.ttf'),
-          'Karla-Reuglar': require('./assets/Karla-Regular.ttf'),
+          'Karla-Regular': require('./assets/Karla-Regular.ttf'),
         });
         const tokenPromise = AsyncStorage.getItem('userToken');
         const [, tokenResult] = await Promise.all([fontPromise, tokenPromise]);

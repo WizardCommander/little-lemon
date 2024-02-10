@@ -1,38 +1,128 @@
-import { StyleSheet, Text, View, Image, TextInput, Pressable, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, Image, TextInput, Pressable, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useState, useEffect, useLayoutEffect } from "react";
 import Logo from '../assets/Logo.png'
-import Splash from '../assets/splash.png'
 import * as Font from 'expo-font';
 import {NavigationContatiner} from '@react-navigation/native'
 import React from "react";
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import * as ImagePicker from 'expo-image-picker'
 import {MaterialIcons} from '@expo/vector-icons'
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfileScreen({route, navigation}) {
 
-    const {firstName, email} = route.params
-    const [profileImage, setProfileImage] = useState(null)
-    
-    
+    const {firstNameInput, emailInput} = route.params
+    const [profileImage, setProfileImage] = useState('')
+    const [emailForm, setEmailForm] = useState(emailInput)
+    const [name, setName] = useState(firstNameInput);
+    const [phone, setPhone] = useState('')
+    const [ogProfileData, setOgProfileData] = useState(null);
+
+    const getPermissionAsync = async () => {
+      const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions!')
+        return false;
+      }
+      return true;
+    }
 
     const pickImage = async () => {
+      const hasPermission = await getPermissionAsync();
+      if (!hasPermission) return;
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 1,
         aspect: [4,3],
-      },
-      console.log(result));
+      })
 
-      if (!result.canceled) {
-        setProfileImage(result.uri);
+      console.log('Image picker result:', result) // DEBUG
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const imageUri = result.assets[0].uri
+        console.log('Selected image Uri:', typeof imageUri, imageUri);
+        setProfileImage(imageUri);
       }
 
     };
 
+    const saveAllChanges = async () => {
+      try {
+        const profileData = {
+          firstNameInput,
+          emailForm,
+          phone,
+          profileImageUri: profileImage
+        };
+
+        const jsonValue = JSON.stringify(profileData);
+        await AsyncStorage.setItem('userProfile', jsonValue);
+
+        Alert.alert(
+          "Profile Saved",
+          "Your profile information has been successfully saved.",
+          [
+            {text: "OK"}
+          ]
+        );
+        console.log('Profile saved successfully');
+      } catch (e) {
+        Alert.alert(
+          "Save Failed",
+          "Failed to save your profile. Please try again.",
+          [
+            {text: "OK"}
+          ]
+        );
+        console.log('Failed to save the profile')
+      }
+    };
+
+    const discardChanges = () => {
+      if (ogProfileData) {
+        setName(ogProfileData.firstNameInput)
+        setEmailForm(ogProfileData.emailForm)
+        setPhone(ogProfileData.phone)
+        setProfileImage(ogProfileData.profileImageUri)
+
+      } else {
+        console.log("No profile data to revert to")
+      }
+    };
+
+
+    const loadProfileData = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('userProfile');
+        if (jsonValue != null) {
+          const profileData = JSON.parse(jsonValue);
+          setName(profileData.firstNameInput);
+          setEmailForm(profileData.emailForm);
+          setPhone(profileData.phone);
+          setProfileImage(profileData.profileImageUri);
+          setOgProfileData(profileData)
+        } else {
+          console.log('No profile data found')
+        }
+      } catch(e) {
+        console.log('Failed to load the profile:', e)
+      }
+    };
+
+    useEffect(() => {
+      loadProfileData();
+    }, []);
+
+    const handleLogout = () => {
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Login'}],
+      });
+    };
+
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
 
             <View style={styles.headerContainer}>
               <View style={styles.imageContainer}>
@@ -65,32 +155,32 @@ export default function ProfileScreen({route, navigation}) {
              </View>
 
             <View style={styles.container}>
-                <TextInput style={styles.input} placeholder={firstName} />
-                <TextInput style={styles.input} placeholder={email} />
-                <TextInput style={styles.input} placeholder="Phone" />
+                <TextInput style={styles.input} placeholder={'First Name'} value={name} onChangeText={setName} />
+                <TextInput style={styles.input} placeholder={'Email'} value={emailForm} onChangeText={setEmailForm} />
+                <TextInput style={styles.input} placeholder="Phone" value={phone} onChangeText={setPhone} />
             </View>
 
             <View style={styles.footerContainer}>
-              <Pressable style={styles.logoutButton}>
+              <Pressable style={styles.logoutButton} onPress={handleLogout}>
                 <Text style={styles.logoutButtonText}>Log Out</Text>
               </Pressable>
              </View>
 
              <View style={styles.saveContainer}>
-              <Pressable style={styles.saveChanges}>
+              <Pressable style={styles.saveChanges} onPress={saveAllChanges}>
                 <Text style={styles.saveChangesText}>Save Changes</Text>
               </Pressable>
-              <Pressable style={styles.discard}>
+              <Pressable style={styles.discard} onPress={discardChanges} >
                 <Text style={styles.discardText}>Discard Changes</Text>
               </Pressable>
              </View>
-        </View>
+        </ScrollView>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: 'fff',
         justifyContent: 'flex-start',
     },
