@@ -1,8 +1,6 @@
 import { StyleSheet, Text, View, Image, TextInput, Pressable, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useState, useEffect, useLayoutEffect } from "react";
 import Logo from '../assets/Logo.png'
-import * as Font from 'expo-font';
-import {NavigationContatiner} from '@react-navigation/native'
 import React from "react";
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import * as ImagePicker from 'expo-image-picker'
