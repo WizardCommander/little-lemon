@@ -4,6 +4,7 @@ import LoginScreen from './screens/Onboarding';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from './screens/Profile';
+import HomeScreen from './screens/Home';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import * as Font from 'expo-font';
@@ -69,7 +70,7 @@ export default function App() {
       <Stack.Navigator initialRouteName={userToken ? "Profile" : "Login"}>
         <Stack.Screen name='Login' component={LoginScreen} options={{headerShown: false}} />
         <Stack.Screen name='Profile' component={ProfileScreen} options={{headerShown: false}}/>
-       <Stack.Screen name= 'Home' component={HomeScreen} />
+       <Stack.Screen name= 'Home' component={HomeScreen} options={{headerShown: false}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

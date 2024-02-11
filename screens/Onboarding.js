@@ -68,7 +68,7 @@ export default function LoginScreen() {
             <Pressable
             style={styles.button}
             disabled={isFormIncomplete}
-            onPress={() => navigation.navigate('Profile', {firstNameInput, emailInput})}>
+            onPress={() => navigation.navigate('Home', {firstNameInput, emailInput})}>
                 <Text style={styles.buttonText}>Submit</Text>
             </Pressable>
 
