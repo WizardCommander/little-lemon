@@ -1,15 +1,112 @@
-import { StyleSheet, Text, View, Image, TextInput, Pressable, TouchableOpacity, ScrollView, Alert, } from "react-native";
+import { StyleSheet, Text, View, Image, TextInput, Pressable, TouchableOpacity, Alert, FlatList, } from "react-native";
 import { useState, useEffect, useLayoutEffect } from "react";
 import Logo from '../assets/Logo.png'
 import Title from '../assets/title.jpg'
 import React from "react";
-import {MaterialIcons} from '@expo/vector-icons'
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {MaterialIcons} from '@expo/vector-icons';
+import * as SQLite from 'expo-sqlite';
+
+
+
 
 export default function HomeScreen ({route, navigation}) {
 
     const {profileImage} = route.params
-    const [menuData, setMenuData] = useState(null);
+    const [menuData, setMenuData] = useState([]);
+    const [result, setResult] = useState([]);
+    const [error, setError] = useState('');
+    const [pressedButton, setPressedButton] = useState(null);
+
+    const db = SQLite.openDatabase('little_lemon.db');
+
+    useEffect(() => {
+      db.transaction(tx => {
+         tx.executeSql(
+            `CREATE TABLE IF NOT EXISTS menu (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            price REAL,
+            category TEXT,
+            image TEXT
+            );`,
+            [],
+         );
+      });
+    }, []);
+   
+
+
+
+   db.transaction(tx => {
+      menuData.forEach(item => {
+         tx.executeSql(
+            'INSERT INTO menu (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)',
+            [item.name, item.description, item.price, item.image, item.category],
+            (tx, results) => {
+               console.log('Results', results.rowsAffected);
+               if (results.rowsAffected > 0) {
+                  console.log('Successfully inserted data')
+               } else {
+                  console.log('Failed to insert data');
+               }
+            },
+            error => {
+               console.log('Error inserting data: ' + error.message);
+            }
+         );
+      });
+   });
+
+   const fetchMenuItemsByCategory = (category, setMenuData) => {
+      db.transaction(tx => {
+         tx.executeSql(
+            `SELECT * FROM menu WHERE category = ?;`,
+            [category],
+            (_,{rows}) => {
+               setMenuData(rows._array);
+            },
+            (_, error) => {
+               console.error(error);
+            }
+         )
+      })
+   }
+
+   const handlePress = (category) => {
+      setPressedButton(category);
+      fetchMenuItemsByCategory(category, setMenuData)
+   }
+
+    const renderItemSeparator = () => {
+      return (
+         <View
+         style={{
+            height: 1,
+            width: "100%",
+            backgroundColor: '#CED0CE',
+         }}
+         />
+      )
+   }
+
+    const renderItem = ({item}) => {
+      const baseUrl = `https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/images/${item.image}`
+      return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+         <View style={{ flex: 1 }}>
+            <Text style={styles.menuTitleText}>{item.name}</Text>
+            <Text style={styles.menuDescription} numberOfLines={2} ellipsizeMode="tail">{item.description}</Text>
+            <Text style={styles.menuPrice}>{'$' + item.price}</Text>
+         </View>
+         {item.image && (
+         <View style={styles.menuImageContainer}>
+            <Image source={{uri: baseUrl}} style={styles.menuImage} />
+         </View>
+         )}
+      </View>
+      );
+    };
 
     async function fetchMenuData() {
         try {
@@ -18,8 +115,7 @@ export default function HomeScreen ({route, navigation}) {
                 throw new Error('Network response was not ok');
             }
             const data = await response.json();
-            setMenuData(data)
-            console.log(data);
+            setMenuData(data.menu)
         } catch (error) {
             setError('There has been a problem with your fetch operation')
             Alert.alert('Error', error.message)
@@ -31,7 +127,9 @@ export default function HomeScreen ({route, navigation}) {
       }, []);
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <FlatList contentContainerStyle={styles.container}
+         ListHeaderComponent={
+            <>
            <View style={styles.headerContainer}>
             <View style={styles.imageContainer}>
             <Image style={styles.headerImage} source={Logo} />
@@ -59,18 +157,21 @@ export default function HomeScreen ({route, navigation}) {
            <View style={styles.filterHeaderContainer}>
             <Text style={styles.filterTitleText}>Order For Delivery!</Text>
             <View style={styles.filterButtonsContainer}>
-                <Pressable style={styles.filterButton} ><Text style={styles.filterButtonText}>Starters</Text></Pressable>
-                <Pressable style={styles.filterButton} ><Text style={styles.filterButtonText}>Mains</Text></Pressable>
-                <Pressable style={styles.filterButton} ><Text style={styles.filterButtonText}>Desserts</Text></Pressable>
-                <Pressable style={styles.filterButton} ><Text style={styles.filterButtonText}>Drinks</Text></Pressable>
+                <Pressable style={styles.filterButton} onPress={() => handlePress('starters')}><Text style={styles.filterButtonText}>Starters</Text></Pressable>
+                <Pressable style={styles.filterButton} onPress={() => handlePress('mains')}><Text style={styles.filterButtonText}>Mains</Text></Pressable>
+                <Pressable style={styles.filterButton} onPress={() => handlePress('desserts')}><Text style={styles.filterButtonText}>Desserts</Text></Pressable>
+                <Pressable style={styles.filterButton} onPress={() => handlePress('drinks')}><Text style={styles.filterButtonText}>Drinks</Text></Pressable>
             </View>
             <View style={styles.separator}></View>
            </View>
 
-           <View style={styles.menuContainer}>
-
-           </View>
-        </ScrollView>
+        </>
+         }
+         data={menuData}
+         renderItem={renderItem}
+         keyExtractor={item => item.name}
+         ItemSeparatorComponent={renderItemSeparator}
+         />
     )
 }
 
@@ -208,7 +309,6 @@ const styles = StyleSheet.create ({
      separator: {
         height: 2,
         backgroundColor: '#ccc',
-        marginBottom: 10,
         marginLeft: 15,
         marginRight: 15
      },
@@ -218,5 +318,41 @@ const styles = StyleSheet.create ({
         flexDirection: 'column',
         paddingBottom: 30,
         justifyContent: 'flex-start',
+     },
+     menuTitleText: {
+      fontFamily: 'Karla-Regular',
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 5,
+      marginLeft: 5,
+      marginTop: 10
+     },
+     menuPrice: {
+      fontFamily: 'Karla-Regular',
+      fontSize: 18,
+      marginLeft: 5
+     },
+     menuDescription: {
+      fontFamily: 'Karla-Regular',
+      fontSize: 16,
+      marginBottom: 10,
+      marginLeft: 5
+     },
+     menuImage: {
+      width: '100%',
+      height: '100%',
+
+     },
+     menuImageContainer: {
+      flex: 0, alignItems: 'flex-end', width: 100, height: 100
+     },
+     pressedFilterButton: {
+      backgroundColor: '#F4CE14',
+      borderRadius: 10,
+      margin: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 10
      }
 })
