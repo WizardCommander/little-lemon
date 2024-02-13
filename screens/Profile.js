@@ -9,7 +9,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfileScreen({route, navigation}) {
 
-    const {firstNameInput, emailInput} = route.params
+    const {firstNameInput, emailInput,} = route.params
+
     const [profileImage, setProfileImage] = useState('')
     const [emailForm, setEmailForm] = useState(emailInput)
     const [name, setName] = useState(firstNameInput);
@@ -186,15 +187,15 @@ const styles = StyleSheet.create({
         width: '100%', // Take up the full width of the screen
         alignItems: 'center',
         flexDirection: 'row',
-        paddingBottom: 30,
+        paddingBottom: 20,
         justifyContent: 'center',
         marginTop: 20
     },
     headerText: {
-      fontSize: 20,
+      fontSize: 30,
       marginLeft: 30,
       paddingBottom: 30,
-      fontFamily: 'Karla-Regular',
+      fontFamily: 'MarkaziText-Regular',
     },
     avatarContainer: {
       width: '100%',
@@ -208,7 +209,6 @@ const styles = StyleSheet.create({
       flexDirection: "row",
       alignItems: 'center',
       justifyContent: 'center',
-
       paddingBottom: 30,
     },
     logoutButton: {
@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
     logoutButtonText: {
       color: 'black',
       fontSize: 16,
+      fontFamily: 'Karla-Regular'
     },
     saveContainer: {
       width: '100%',
@@ -246,6 +247,7 @@ const styles = StyleSheet.create({
     saveChangesText: {
       color: '#FFFFFF',
       fontSize: 16,
+      fontFamily: 'Karla-Regular'
     },
     discard: {
       padding: 10,
@@ -260,6 +262,7 @@ const styles = StyleSheet.create({
     discardText: {
       color: '#495E57',
       fontSize: 16,
+      fontFamily: 'Karla-Regular'
     },
     imagePlaceholder: {
       width: 75,
@@ -298,10 +301,12 @@ const styles = StyleSheet.create({
     changeButtonText: {
       color: '#FFFFFF',
       fontSize: 16,
+      fontFamily: 'Karla-Regular'
     },
     removeButtonText: {
       color: '#495E57',
       fontSize: 16,
+      fontFamily: 'Karla-Regular'
     },
     input: {
         height: 40,

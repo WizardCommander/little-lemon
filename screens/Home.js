@@ -11,13 +11,33 @@ import * as SQLite from 'expo-sqlite';
 
 export default function HomeScreen ({route, navigation}) {
 
-    const {profileImage} = route.params
+    const {profileImage, firstNameInput, emailInput} = route.params
+    
     const [menuData, setMenuData] = useState([]);
-    const [result, setResult] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
+    const [searchText, setSearchText] = useState('')
     const [error, setError] = useState('');
     const [pressedButton, setPressedButton] = useState(null);
 
     const db = SQLite.openDatabase('little_lemon.db');
+
+  useEffect(() => {
+   async function fetchMenuData() {
+      try {
+          const response = await fetch('https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json');
+          if (!response.ok) {
+              throw new Error('Network response was not ok');
+          }
+          const data = await response.json();
+          setMenuData(data.menu)
+          setFilteredData(data.menu)
+      } catch (error) {
+          setError('There has been a problem with your fetch operation')
+          Alert.alert('Error', error.message)
+      }
+  }
+      fetchMenuData();
+    }, []);
 
     useEffect(() => {
       db.transaction(tx => {
@@ -34,49 +54,32 @@ export default function HomeScreen ({route, navigation}) {
          );
       });
     }, []);
-   
 
-
-
-   db.transaction(tx => {
-      menuData.forEach(item => {
-         tx.executeSql(
-            'INSERT INTO menu (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)',
-            [item.name, item.description, item.price, item.image, item.category],
-            (tx, results) => {
-               console.log('Results', results.rowsAffected);
-               if (results.rowsAffected > 0) {
-                  console.log('Successfully inserted data')
-               } else {
-                  console.log('Failed to insert data');
-               }
-            },
-            error => {
-               console.log('Error inserting data: ' + error.message);
-            }
-         );
-      });
-   });
-
-   const fetchMenuItemsByCategory = (category, setMenuData) => {
-      db.transaction(tx => {
-         tx.executeSql(
-            `SELECT * FROM menu WHERE category = ?;`,
-            [category],
-            (_,{rows}) => {
-               setMenuData(rows._array);
-            },
-            (_, error) => {
-               console.error(error);
-            }
-         )
-      })
-   }
 
    const handlePress = (category) => {
-      setPressedButton(category);
-      fetchMenuItemsByCategory(category, setMenuData)
-   }
+      if (pressedButton === category) {
+         setFilteredData(menuData)
+         setPressedButton(null)
+      } else {
+         const filteredItems = menuData.filter(item => item.category === category);
+         setFilteredData(filteredItems);
+         setPressedButton(category);
+      }
+   };
+
+   useEffect(() => {
+      let filteredItems = menuData
+      if (pressedButton) {
+         filteredItems = filteredItems.filter(item => item.category === pressedButton)
+      }
+
+      if (searchText) {
+         filteredItems = filteredItems.filter(item =>
+            item.name.toLowerCase().includes(searchText.toLowerCase())
+            );
+      }
+      setFilteredData(filteredItems);
+   }, [menuData, pressedButton, searchText])
 
     const renderItemSeparator = () => {
       return (
@@ -108,24 +111,6 @@ export default function HomeScreen ({route, navigation}) {
       );
     };
 
-    async function fetchMenuData() {
-        try {
-            const response = await fetch('https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json');
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            const data = await response.json();
-            setMenuData(data.menu)
-        } catch (error) {
-            setError('There has been a problem with your fetch operation')
-            Alert.alert('Error', error.message)
-        }
-    }
-
-    useEffect(() => {
-        fetchMenuData();
-      }, []);
-
     return (
         <FlatList contentContainerStyle={styles.container}
          ListHeaderComponent={
@@ -134,7 +119,7 @@ export default function HomeScreen ({route, navigation}) {
             <View style={styles.imageContainer}>
             <Image style={styles.headerImage} source={Logo} />
             </View>
-           <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.imagePlaceholder}>
+           <TouchableOpacity onPress={() => navigation.navigate('Profile', firstNameInput, emailInput,)} style={styles.imagePlaceholder}>
               {profileImage ? (
                 <Image source={{uri: profileImage}} style={styles.profileImage} />
               ) : (
@@ -148,6 +133,7 @@ export default function HomeScreen ({route, navigation}) {
                 <Text style={styles.subTitleText}>Chicago</Text>
                 <View style={styles.descriptionContainer}>
                 <Text style={styles.descriptionText}>We are a family owned Mediterranean restaurant, focusing on traditional recipes served with a modern twist.</Text>
+               <TextInput style={styles.input} placeholder="Search..." value={searchText} onChangeText={setSearchText} />
                 </View>
                 <View style={styles.titleImageContainer}>
                     <Image source={Title} style={styles.titleImage}></Image>
@@ -157,17 +143,17 @@ export default function HomeScreen ({route, navigation}) {
            <View style={styles.filterHeaderContainer}>
             <Text style={styles.filterTitleText}>Order For Delivery!</Text>
             <View style={styles.filterButtonsContainer}>
-                <Pressable style={styles.filterButton} onPress={() => handlePress('starters')}><Text style={styles.filterButtonText}>Starters</Text></Pressable>
-                <Pressable style={styles.filterButton} onPress={() => handlePress('mains')}><Text style={styles.filterButtonText}>Mains</Text></Pressable>
-                <Pressable style={styles.filterButton} onPress={() => handlePress('desserts')}><Text style={styles.filterButtonText}>Desserts</Text></Pressable>
-                <Pressable style={styles.filterButton} onPress={() => handlePress('drinks')}><Text style={styles.filterButtonText}>Drinks</Text></Pressable>
+                <Pressable style={pressedButton === 'starters' ? [styles.filterButton, styles.pressedFilterButton] : styles.filterButton} onPress={() => handlePress('starters')}><Text style={pressedButton === 'starters' ? styles.filteredButtonText : styles.filterButtonText}>Starters</Text></Pressable>
+                <Pressable style={pressedButton === 'mains' ? [styles.filterButton, styles.pressedFilterButton] : styles.filterButton} onPress={() => handlePress('mains')}><Text style={pressedButton === 'mains' ? styles.filteredButtonText : styles.filterButtonText}>Mains</Text></Pressable>
+                <Pressable style={pressedButton === 'desserts' ? [styles.filterButton, styles.pressedFilterButton] : styles.filterButton} onPress={() => handlePress('desserts')}><Text style={pressedButton === 'desserts' ? styles.filteredButtonText : styles.filterButtonText}>Desserts</Text></Pressable>
+                <Pressable style={pressedButton === 'drinks' ? [styles.filterButton, styles.pressedFilterButton] : styles.filterButton} onPress={() => handlePress('drinks')}><Text style={pressedButton === 'starters' ? styles.filteredButtonText : styles.filterButtonText}>Drinks</Text></Pressable>
             </View>
             <View style={styles.separator}></View>
            </View>
 
         </>
          }
-         data={menuData}
+         data={filteredData}
          renderItem={renderItem}
          keyExtractor={item => item.name}
          ItemSeparatorComponent={renderItemSeparator}
@@ -252,6 +238,18 @@ const styles = StyleSheet.create ({
         color: '#fff',
         marginLeft: 20,
         marginTop: 20,
+     },
+     input: {
+      height: 40,
+      width: 300,
+      marginVertical: 20,
+      marginLeft: 30,
+      borderWidth: 1,
+      borderColor: '#ccc',
+      padding: 10,
+      paddingTop: 10,
+      borderRadius: 5,
+      backgroundColor: '#fff',
      },
      titleImage: {
         width: '100%',
@@ -354,5 +352,10 @@ const styles = StyleSheet.create ({
       justifyContent: 'center',
       paddingVertical: 10,
       paddingHorizontal: 10
+     },
+     filteredButtonText: {
+      fontFamily: 'Karla-Regular',
+        fontSize: 16,
+        color: 'black'
      }
 })
